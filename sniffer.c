@@ -2,8 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/types.h>
+#include <arpa/inet.h>
+#include <stdint.h>
 #include <limits.h>
+
+#define ETH_P_ALL 0x0003
+#define ETH_P_IP 0x0800
 
 typedef struct {
 	uint16_t src_port; // Source port
@@ -60,10 +64,11 @@ void sniff(unsigned char *buffer, int data_size){
 
 				if(msg->type == 1){
 					printf("Matricula: ");
-					for(int i = 0; i < 8; i++){
-						printf("%u", msg->matricula[i]);
-					}
+					// for(int i = 0; i < 8; i++){
+					// 	printf("%u", msg->matricula[i]);
+					// }
 				}else if(msg->type == 2){
+					printf("Oi\n");
 
 				}
 			}
