@@ -4,7 +4,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdint.h>
-#include <limits.h>
 
 #define ETH_P_ALL 0x0003
 #define ETH_P_IP 0x0800
@@ -25,8 +24,8 @@ typedef struct {
 	uint8_t ttl; // Time to live
 	uint8_t protocol;
 	uint16_t h_checksum; // Header Checksum
-	uint32_t src_ip; // Source IP
-	uint32_t dest_ip; // Destination IP
+	uint8_t src_ip[4]; // Source IP
+	uint8_t dest_ip[4]; // Destination IP
 }IP_header;
 
 typedef struct {
@@ -38,8 +37,7 @@ typedef struct {
 typedef struct {
 	uint8_t type;
 	uint8_t matricula[8];
-	uint16_t tamanho;
-	char *nome;
+	uint8_t tamanho[2];
 }Msg;
 
 void sniff(unsigned char *buffer, int data_size){
@@ -48,28 +46,46 @@ void sniff(unsigned char *buffer, int data_size){
 	if(ntohs(eth->type) == ETH_P_IP){
 		IP_header *ip = (IP_header *)(eth + 1);
 
-		if(ntohs(ip->protocol) == IPPROTO_UDP){
+		if(ip->protocol == IPPROTO_UDP){
 			UDP_header *udp = (UDP_header *)(ip + 1);
 
 			if(ntohs(udp->dest_port) == 1234){
 				Msg *msg = (Msg *)(udp + 1);
 
-				// printf("MAC de origem: %u\n", ntohs(eth->src_mac));
-				// printf("MAC de destino: %u\n", ntohs(eth->dest_mac));
-				// printf("IP de origem: %u\n", ntohs(ip->src_ip));
-				// printf("IP de destino: %u\n", ntohs(ip->dest_ip));
-				// printf("Protocolo de transporte: %u\n", ntohs(ip->protocol));
-				// printf("Porta UDP de origem: %s\n", ntohs(udp->src_port));
-				// printf("Porta UDP de destino: %s\n", ntohs(udp->dest_port));
+				printf("MAC de origem: %2x:%2x:%2x:%02x:%02x:%02x\n", eth->src_mac[0], eth->src_mac[1],
+					eth->src_mac[2],eth->src_mac[3],eth->src_mac[4],eth->src_mac[5]);
+				printf("MAC de destino: %2x:%2x:%2x:%02x:%02x:%02x\n", eth->dest_mac[0], eth->dest_mac[1],
+					eth->dest_mac[2],eth->dest_mac[3],eth->dest_mac[4],eth->dest_mac[5]);
+
+				printf("IP de origem: %u.%u.%u.%u\n", ip->src_ip[0], ip->src_ip[1], ip->src_ip[2],
+					ip->src_ip[3]);
+				printf("IP de destino: %u.%u.%u.%u\n", ip->dest_ip[0], ip->dest_ip[1], ip->dest_ip[2],
+					ip->dest_ip[3]);
+
+				printf("Protocolo de transporte: %u\n", ip->protocol);
+				printf("Porta UDP de origem: %u\n", ntohs(udp->src_port));
+				printf("Porta UDP de destino: %u\n", ntohs(udp->dest_port));
 
 				if(msg->type == 1){
-					printf("Matricula: ");
-					// for(int i = 0; i < 8; i++){
-					// 	printf("%u", msg->matricula[i]);
-					// }
-				}else if(msg->type == 2){
-					printf("Oi\n");
+					printf("Matricula: \n");
+					for(int i = 0; i < 8; i++){
+						printf("%c", msg->matricula[i]);
+					}
+					printf("\n");
 
+					uint16_t msgLength = msg->tamanho[0]*10 + msg->tamanho[1];
+
+					for(char i = 0; i < msgLength; i++){
+						printf("%c", *(msg->tamanho + 2 + i));
+					}
+					printf("\n");
+
+				}else if(msg->type == 2){
+					printf("Matricula: \n");
+					for(int i = 0; i < 8; i++){
+						printf("%c", msg->matricula[i]);
+					}
+					printf("\n");
 				}
 			}
 		}
@@ -81,9 +97,9 @@ int main(){
 	// Strcuture to store the sending address
 	struct sockaddr socket_addr;
 
-	unsigned char *buffer = (unsigned char *) malloc(UINT_MAX);
+	unsigned char *buffer = (unsigned char *) malloc(65534);
 
-	int socket_raw = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL)); // Receive raw packets from all protocols
+	int socket_raw = socket(PF_PACKET, SOCK_RAW, htons(0x0003)); // Receive raw packets from all protocols
 
 	if(socket_raw < 0){
 		printf("[ERROR] - Socket\n");
@@ -94,7 +110,7 @@ int main(){
 		int socket_addr_size = sizeof(socket_addr);
 
 		// Receiving data from socket and storing on buffer
-		int data_size = recvfrom(socket_raw, buffer, UINT_MAX, 0, &socket_addr, &socket_addr_size);
+		int data_size = recvfrom(socket_raw, buffer, 65534, 0, &socket_addr, &socket_addr_size);
 
 		if(data_size < 0){
 			printf("[ERROR] - Receiving packet\n");
