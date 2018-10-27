@@ -11,7 +11,7 @@
 typedef struct {
 	uint16_t src_port; // Source port
 	uint16_t dest_port; // Destination port
-	uint16_t length;
+	uint16_t length; // 
 	uint16_t checksum;
 }UDP_header;
 
@@ -35,22 +35,22 @@ typedef struct {
 }Ethernet_header;
 
 typedef struct {
-	uint8_t type;
-	uint8_t matricula[8];
-	uint8_t tamanho[2];
+	uint8_t type; // Mensage type
+	uint8_t matricula[8]; // Student ID
+	uint8_t tamanho[2]; // Student name length
 }Msg;
 
 void sniff(unsigned char *buffer, int data_size){
-	Ethernet_header *eth = (Ethernet_header *)buffer;
+	Ethernet_header *eth = (Ethernet_header *)buffer; // Fill the ethernet header
 
-	if(ntohs(eth->type) == ETH_P_IP){
-		IP_header *ip = (IP_header *)(eth + 1);
+	if(ntohs(eth->type) == ETH_P_IP){ // Check if the package type is an IP 
+		IP_header *ip = (IP_header *)(eth + 1); // Fill the ip header
 
-		if(ip->protocol == IPPROTO_UDP){
-			UDP_header *udp = (UDP_header *)(ip + 1);
+		if(ip->protocol == IPPROTO_UDP){ // Check if the content of the package is an UDP datagram
+			UDP_header *udp = (UDP_header *)(ip + 1); // Fill the udp header
 
-			if(ntohs(udp->dest_port) == 1234){
-				Msg *msg = (Msg *)(udp + 1);
+			if(ntohs(udp->dest_port) == 1234){ // Check if the destination port is the port defined for the student mensage
+				Msg *msg = (Msg *)(udp + 1); // Fill the mensage
 
 				printf("MAC de origem: %2x:%2x:%2x:%02x:%02x:%02x\n", eth->src_mac[0], eth->src_mac[1],
 					eth->src_mac[2],eth->src_mac[3],eth->src_mac[4],eth->src_mac[5]);
@@ -73,10 +73,10 @@ void sniff(unsigned char *buffer, int data_size){
 					}
 					printf("\n");
 
-					uint16_t msgLength = msg->tamanho[0]*10 + msg->tamanho[1];
+					uint16_t msgLength = msg->tamanho[0]*10 + msg->tamanho[1]; // The student name length is between 0 and 255255 
 
 					for(char i = 0; i < msgLength; i++){
-						printf("%c", *(msg->tamanho + 2 + i));
+						printf("%c", *(msg->tamanho + 2 + i)); // Print the student name that is after the 'tamanho' field
 					}
 					printf("\n");
 
@@ -97,7 +97,7 @@ int main(){
 	// Strcuture to store the sending address
 	struct sockaddr socket_addr;
 
-	unsigned char *buffer = (unsigned char *) malloc(65534);
+	unsigned char *buffer = (unsigned char *) malloc(65534); // Creating a buffer to store the frame
 
 	int socket_raw = socket(PF_PACKET, SOCK_RAW, htons(0x0003)); // Receive raw packets from all protocols
 
