@@ -5,9 +5,6 @@
 #include <arpa/inet.h>
 #include <stdint.h>
 
-#define ETH_P_ALL 0x0003
-#define ETH_P_IP 0x0800
-
 typedef struct {
 	uint16_t src_port; // Source port
 	uint16_t dest_port; // Destination port
@@ -73,7 +70,11 @@ void sniff(unsigned char *buffer, int data_size){
 					}
 					printf("\n");
 
-					uint16_t msgLength = msg->tamanho[0]*10 + msg->tamanho[1]; // The student name length is between 0 and 255255 
+					uint16_t msgLength = 0;
+					if(msg->tamanho[0] > 0){
+						msgLength = msg->tamanho[0] + 255;
+					}
+					msgLength += msg->tamanho[1]; // The student name length is between 0 and 2^16 
 
 					for(char i = 0; i < msgLength; i++){
 						printf("%c", *(msg->tamanho + 2 + i)); // Print the student name that is after the 'tamanho' field
