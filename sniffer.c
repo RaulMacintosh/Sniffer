@@ -5,6 +5,9 @@
 #include <arpa/inet.h>
 #include <stdint.h>
 
+#define ETH_P_ALL 0x0003
+#define ETH_P_IP 0x0800
+
 typedef struct {
 	uint16_t src_port; // Source port
 	uint16_t dest_port; // Destination port
@@ -63,30 +66,29 @@ void sniff(unsigned char *buffer, int data_size){
 				printf("Porta UDP de origem: %u\n", ntohs(udp->src_port));
 				printf("Porta UDP de destino: %u\n", ntohs(udp->dest_port));
 
-				if(msg->type == 1){
-					printf("Matricula: \n");
-					for(int i = 0; i < 8; i++){
-						printf("%c", msg->matricula[i]);
-					}
-					printf("\n");
+				printf("Tipo da menssagem: %u\n", msg->type);
 
+				printf("Matricula: ");
+				for(int i = 0; i < 8; i++){
+					printf("%c", msg->matricula[i]);
+				}
+				printf("\n");
+
+				if(msg->type == 1){
 					uint16_t msgLength = 0;
 					if(msg->tamanho[0] > 0){
-						msgLength = msg->tamanho[0] + 255;
+						msgLength = msg->tamanho[0];
+						msgLength = msgLength << 8;
 					}
 					msgLength += msg->tamanho[1]; // The student name length is between 0 and 2^16 
 
-					for(char i = 0; i < msgLength; i++){
+					printf("Tamanho do nome: %u\n", msgLength);
+					printf("Nome: ");
+					for(uint16_t i = 0; i < msgLength; i++){
 						printf("%c", *(msg->tamanho + 2 + i)); // Print the student name that is after the 'tamanho' field
 					}
 					printf("\n");
 
-				}else if(msg->type == 2){
-					printf("Matricula: \n");
-					for(int i = 0; i < 8; i++){
-						printf("%c", msg->matricula[i]);
-					}
-					printf("\n");
 				}
 			}
 		}
@@ -98,7 +100,7 @@ int main(){
 	// Strcuture to store the sending address
 	struct sockaddr socket_addr;
 
-	unsigned char *buffer = (unsigned char *) malloc(65534); // Creating a buffer to store the frame
+	unsigned char *buffer = (unsigned char *) malloc(65575); // Creating a buffer to store the frame
 
 	int socket_raw = socket(PF_PACKET, SOCK_RAW, htons(0x0003)); // Receive raw packets from all protocols
 
@@ -111,7 +113,7 @@ int main(){
 		int socket_addr_size = sizeof(socket_addr);
 
 		// Receiving data from socket and storing on buffer
-		int data_size = recvfrom(socket_raw, buffer, 65534, 0, &socket_addr, &socket_addr_size);
+		int data_size = recvfrom(socket_raw, buffer, 65575, 0, &socket_addr, &socket_addr_size);
 
 		if(data_size < 0){
 			printf("[ERROR] - Receiving packet\n");
